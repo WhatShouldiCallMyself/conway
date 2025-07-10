@@ -82,7 +82,7 @@ void init() {
 			return;
 		}
 
-		for (short i = 0; i < grid_size; i++) { new_column[i] = (rand() % 9 == 0) ? '1' : '0'; }
+		for (short i = 0; i < grid_size; i++) { new_column[i] = (rand() % 3 == 0) ? '1' : '0'; }
 		board[row] = new_column;
 	}
 }
@@ -113,11 +113,10 @@ void step() {
 		free(board[i]);
 		board[i] = new_board[i];
 	}
-	free(new_board);
 }
 
 void print_board() {
-	const int len_output = grid_size * (grid_size + 1) + 1;
+	const int len_output = grid_size * (grid_size * 2 + 1) + 1;
 	char output[len_output];
 
 	int index = 0;
@@ -125,12 +124,13 @@ void print_board() {
 		for (short col = 0; col < grid_size; col++) {
 			char val = board[row][col];
 			output[index++] = val == '0' ? ' ' : '#';
+			output[index++] = ' ';
 		}
 		output[index++] = '\n';
 	}
 
 	output[index] = '\0';
-	printf("%s", output);
+	fwrite(output, sizeof(char), len_output - 1, stdout);
 }
 
 void cleanup() {
@@ -154,7 +154,7 @@ int main(int argc, char** argv) {
 
 		step();
 		print_board();
-		usleep(100000);
+		usleep(33333);
 	}
 
 	cleanup();
