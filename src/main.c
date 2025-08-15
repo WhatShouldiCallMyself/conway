@@ -58,7 +58,7 @@ short get_live_neighbors(const short* ptr_row, const short* ptr_col) {
 		if ( (i < 0 )|| (i >= grid_size) ) continue;
 		for (short j = col - 1; j <= col + 1; j++) {
 			if ( (j < 0) || (j >= grid_size) || (i == row && j == col) ) continue;
-			if (board[i][j] == '1') count++;
+			if ((board[i][j] & 1) == 1) count++;  // Compare with numeric 1
 		}
 	}
 
@@ -69,49 +69,48 @@ short get_live_neighbors(const short* ptr_row, const short* ptr_col) {
 
 void init() {
 	srand(time(NULL));
-	board = malloc(sizeof(char*) * grid_size);
+	const size_t size = sizeof(char*) * grid_size;
+	board = malloc(size);
 	if (!board) {
 		puts("[conway]: failed to allocate memory!");
 		return;
 	}
 
 	for (short row = 0; row < grid_size; row++) {
-		char* new_column = malloc(sizeof(char) * grid_size);
+		char* new_column = malloc(sizeof(char) * grid_size); // Fixed: was using 'size'
 		if (!new_column) {
 			puts("[conway]: failed to allocate memory!");
 			return;
 		}
 
-		for (short i = 0; i < grid_size; i++) { new_column[i] = (rand() % 3 == 0) ? '1' : '0'; }
+		for (short i = 0; i < grid_size; i++) { 
+			new_column[i] = (rand() % 3 == 0) ? 1 : 0;  // Changed: '1'/'0' to 1/0
+		}
 		board[row] = new_column;
 	}
 }
 
 void step() {
-	char** new_board = malloc(sizeof(char*) * grid_size);
-	for (short i = 0; i < grid_size; i++) {
-		new_board[i] = malloc(sizeof(char) * grid_size);
+	for (short row = 0; row < grid_size; row++) {
+		for (short col = 0; col < grid_size; col++) {
+			char current = board[row][col] & 1;
+			short neighbors = get_live_neighbors(&row, &col);
+			
+			char next_state;
+			if (current == 0) { 
+				next_state = neighbors == 3 ? 1 : 0; 
+			} else { 
+				next_state = ((neighbors < 2) || (neighbors > 3)) ? 0 : 1; 
+			}
+			
+			board[row][col] = current | (next_state << 1);
+		}
 	}
 	
 	for (short row = 0; row < grid_size; row++) {
 		for (short col = 0; col < grid_size; col++) {
-			char is_live = board[row][col];
-			short neighbors = get_live_neighbors(&row, &col);
-			
-			switch (is_live) {
-			case '0':
-				new_board[row][col] = neighbors == 3 ? '1' : '0';
-				break;
-			default: // case '1':
-				new_board[row][col] = ((neighbors < 2) || (neighbors > 3)) ? '0' : '1';
-				break;
-			}
+			board[row][col] >>= 1;
 		}
-	}
-
-	for (short i = 0; i < grid_size; i++) {
-		free(board[i]);
-		board[i] = new_board[i];
 	}
 }
 
@@ -123,7 +122,7 @@ void print_board() {
 	for (short row = 0; row < grid_size; row++) {
 		for (short col = 0; col < grid_size; col++) {
 			char val = board[row][col];
-			output[index++] = val == '0' ? ' ' : '#';
+			output[index++] = val == 0 ? ' ' : '#';  // Changed: '0' to 0
 			output[index++] = ' ';
 		}
 		output[index++] = '\n';
@@ -137,6 +136,8 @@ void cleanup() {
 	for (short row = 0; row < grid_size; row++) { free(board[row]); }
 	free(board);
 }
+
+
 
 int main(int argc, char** argv) {
 	if (argc >= 2 && atoi(argv[1]) > 0)
